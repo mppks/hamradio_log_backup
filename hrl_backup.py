@@ -1,45 +1,59 @@
 from configparser import ConfigParser, ExtendedInterpolation
 import os
 import shutil
+import platform
 
 
-def get_paths(logs):
-    log_path_list = []
-    for log_path in logs.values():
-        if os.path.exists(log_path):
-            log_path_list.append(log_path)
-            print('    found %s' % log_path)
-        else:
-            print('    not found %s' % log_path)
-    return log_path_list
+class HrlBackup:
 
+    def __init__(self, config, log_section='logs', backup_section='backups'):
+        self.config = config
+        self.log_section = log_section
+        self.backup_section = backup_section
 
-def make_backup(logs, backups):
-    for log in logs:
-        for backup in backups:
-            print('    %s' % shutil.copy(log, backup))
+        self.cfg = self._cfg_read()
+
+        self.os_name = platform.system().lower()
+
+    def _cfg_read(self) -> ConfigParser:
+        try:
+            if not os.path.exists(self.config):
+                raise FileNotFoundError('%s not found!' % self.config)
+        except FileNotFoundError as err:
+            exit(err)
+
+        cfg = ConfigParser(interpolation=ExtendedInterpolation())
+        cfg.read(self.config)
+
+        return cfg
+
+    def _get_section(self, name: str):
+        return self.cfg[self.os_name + '-' + name]
+
+    def _get_paths(self, section) -> list:
+        path_list = []
+        for path in section.values():
+            if os.path.exists(path):
+                path_list.append(path)
+                print('    found %s' % path)
+            else:
+                print('    not found %s' % path)
+        return path_list
+
+    def backup(self) -> None:
+        print('Search logs:')
+        logs = self._get_paths(hrl._get_section(self.log_section))
+
+        print('\n\r', 'Search backups:')
+        backups = self._get_paths(hrl._get_section(self.backup_section))
+
+        print('\n\r','Copied:')
+        for log in logs:
+            for backup in backups:
+                print('    %s' % shutil.copy(log, backup))
 
 
 if __name__ == '__main__':
-    CONFIG = 'hrl_backup.cfg'
 
-    cfg = ConfigParser(interpolation=ExtendedInterpolation())
-
-    try:
-        if not os.path.exists(CONFIG):
-            raise FileNotFoundError('%s not found!' % CONFIG)
-    except FileNotFoundError as err:
-        exit(err)
-
-    cfg.read(CONFIG)
-
-    print('Search logs:')
-    logs_section = cfg['windows-logs']
-    logs_list = get_paths(logs_section)
-
-    print('Search backups:')
-    backups_section = cfg['windows-backups']
-    backups_list = get_paths(backups_section)
-
-    print('Copied:')
-    make_backup(logs_list, backups_list)
+    hrl = HrlBackup('hrl_backup.cfg', 'logs', 'backups')
+    hrl.backup()
