@@ -28,7 +28,12 @@ class HrlBackup:
         return cfg
 
     def _get_section(self, name: str):
-        return self.cfg[self.os_name + '-' + name]
+        try:
+            section = self.cfg[self.os_name + '-' + name]
+        except KeyError as err:
+            exit('Section with name' + str(err) + ' was not found')
+        else:
+            return section
 
     def _get_paths(self, section) -> list:
         path_list = []
